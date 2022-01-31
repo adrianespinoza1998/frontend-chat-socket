@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { GoogleLogin } from 'react-google-login';
 import axios from 'axios';
 import env from "react-dotenv";
@@ -16,6 +16,10 @@ import GoogleIcon from '@mui/icons-material/Google';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+
+import { AuthContext } from '../../auth/authContext';
+import { types } from '../../types/types';
+import { useNavigate } from 'react-router-dom';
 
 function Copyright(props) {
 
@@ -36,6 +40,12 @@ const theme = createTheme();
 
 export const LoginScreen = () => {
 
+  //Guardar credenciales en localhost
+  const {dispatch} = useContext(AuthContext);
+
+  //Navegar entre rutas
+  const navigate = useNavigate();
+
  //Guardar host
   const url = 'http://localhost:5000';
 
@@ -44,27 +54,75 @@ export const LoginScreen = () => {
     const id_token = googleUser.getAuthResponse().id_token;
 
     //Enviar token al backend
-    const response = await axios({
+    const {data} = await axios({
       method: 'POST',
       url: `${url}/api/auth/google`,
       data: {id_token}
     });
 
-    console.log(response);
+    //Validar respuesta del api
+    if(!data.msg){
+
+      //Inicializar datos del dispatch
+      const action = {
+        type: types.login,
+        payload: data
+      }
+  
+      //Guardar datos en el localhost una vez aceptados
+      dispatch(action);
+
+      //Redireccionar al home
+      navigate('/dashboard', {
+        replace: true
+      });
+
+    }else{
+      alert('Error al iniciar sesión');
+    }
   }
 
   const failedSingIn = (response)=>{
     console.log(response);
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async(event) => {
     event.preventDefault();
+
+    //Obtener los datos del formulario
     const data = new FormData(event.currentTarget);
-    // eslint-disable-next-line no-console
-    console.log({
+    
+    //Desestructurar los datos del formulario
+    const {correo, password} = {
       correo: data.get('correo'),
       password: data.get('password'),
+    };
+
+    //Enviar las credenciales al api
+    const {data: apiData} = await axios({
+      method: 'POST',
+      url: `${url}/api/auth`,
+      data: {correo, password}
     });
+    
+    //Validar respuesta del api
+    if(!apiData.msg){
+      //Inicializar datos del dispatch
+      const action = {
+        type: types.login,
+        payload: apiData
+      }
+
+      //Guardar datos en el localhost una vez aceptados
+      dispatch(action);
+
+      //Redireccionar al home
+      navigate('/dashboard', {
+        replace: true
+      });
+    }else{
+      alert(apiData.msg);
+    }
   };
 
   return (
@@ -148,7 +206,7 @@ export const LoginScreen = () => {
                 </Link>
               </Grid>
               <Grid item>
-                <Link href="#" variant="body2">
+                <Link href="/dashboard" variant="body2">
                   {"¿No posee una cuenta? Registrarse"}
                 </Link>
               </Grid>

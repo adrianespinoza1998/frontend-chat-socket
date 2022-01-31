@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import { HomeScreen } from '../screens/HomeScreen';
+import { HomeScreen } from '../components/screens/HomeScreen';
 
 export const DashboardRoutes = () => {
   return (
